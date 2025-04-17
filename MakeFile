@@ -1,0 +1,11 @@
+PHONY: build, run, postgres_run
+
+build:
+    go build -o app cmd/app/main.go
+
+run:
+	go run cmd/app.main.go
+
+postgres_run:
+    docker run -d -p 5436:5432 -e POSTGRES_PASSWORD='qwerty' postgres:17
+	// TODO

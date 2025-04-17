@@ -8,12 +8,22 @@ import (
 )
 
 type Config struct {
-	Env    string `yaml:"env" env-default:"local"`
-	Server Server `yaml:"server"`
+	Env      string   `yaml:"env" env-default:"local"`
+	Server   Server   `yaml:"server"`
+	Postgres Postgres `yaml:"postgres"`
 }
 
 type Server struct {
 	Port string `yaml:"port" env-required:"true"`
+}
+
+type Postgres struct {
+	Username string `yaml:"username" env-required:"true"`
+	Password string `yaml:"password" env-required:"true"`
+	Host     string `yaml:"host" env-required:"true"`
+	Port     string `yaml:"port" env-required:"true"`
+	DBname   string `yaml:"dbname" env-required:"true"`
+	SSLmode  string `yaml:"sslmode" env-default:"disable"`
 }
 
 func MustLoad() *Config {

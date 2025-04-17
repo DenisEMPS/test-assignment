@@ -10,7 +10,7 @@ type Server struct {
 	httpServer *http.Server
 }
 
-func (s *Server) Run(port string, handler http.Handler) error {
+func (s *Server) Run(handler http.Handler, port string) error {
 	s.httpServer = &http.Server{
 		Addr:           "127.0.0.1" + ":" + port,
 		MaxHeaderBytes: 1 << 20,

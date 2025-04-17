@@ -1,6 +1,11 @@
-package handler
+package http
 
 import "github.com/gin-gonic/gin"
+
+type AuthService interface {
+	Login()
+	Refresh()
+}
 
 func (h *Handler) Login(c *gin.Context) {
 
