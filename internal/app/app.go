@@ -39,7 +39,7 @@ func Run() {
 		os.Exit(1)
 	}
 	repo := postgres.NewAuth(db)
-	service := auth.New(repo, log, &cfg.Token)
+	service := auth.New(repo, log, &cfg.JWT)
 	handler := http.NewHandler(service)
 
 	serv := new(server.Server)

@@ -2,43 +2,42 @@ package http
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/DenisEMPS/test-assignment/internal/domain"
+	"github.com/DenisEMPS/test-assignment/internal/service/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type AuthService interface {
 	GenerateTokens(ctx context.Context, userID uuid.UUID, userIP string) (*domain.TokenPairResponse, error)
-	RefreshTokens(ctx context.Context, tokenPair *domain.RefreshTokenRequest, userIP string) (*domain.TokenPairResponse, error)
+	RefreshTokens(ctx context.Context, tokenPair *domain.RefreshTokensRequest, userIP string) (*domain.TokenPairResponse, error)
 }
 
-const (
-	qUserID = "user_id"
-)
-
 func (h *Handler) GenerateTokens(c *gin.Context) {
-	userIDStr, ok := c.GetQuery(qUserID)
+	idParam, ok := c.GetQuery(qUserID)
 	if !ok {
-		newErrorResponse(c, http.StatusBadRequest, "id param required")
+		newErrorResponse(c, http.StatusBadRequest, invalidID)
 		return
 	}
-	userID, err := uuid.Parse(userIDStr)
+
+	userID, err := uuid.Parse(idParam)
 	if err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid id param")
+		newErrorResponse(c, http.StatusBadRequest, invalidID)
 		return
 	}
 
 	userIP := c.ClientIP()
-	if userIP == "" {
-		newErrorResponse(c, http.StatusBadRequest, "invalid request params")
+	if userIP == empty {
+		newErrorResponse(c, http.StatusBadRequest, invalidReq)
 		return
 	}
 
 	tokens, err := h.authService.GenerateTokens(context.Background(), userID, userIP)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "internal error")
+		newErrorResponse(c, http.StatusInternalServerError, internalError)
 		return
 	}
 
@@ -46,22 +45,37 @@ func (h *Handler) GenerateTokens(c *gin.Context) {
 }
 
 func (h *Handler) RefreshTokens(c *gin.Context) {
-	var tokenPair *domain.RefreshTokenRequest
-	if err := c.BindJSON(&tokenPair); err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, "invalid request params")
+	var tokenPair *domain.RefreshTokensRequest
+
+	if err := c.ShouldBindJSON(&tokenPair); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, invalidReq)
 		return
 	}
 
 	userIP := c.ClientIP()
-	if userIP == "" {
-		newErrorResponse(c, http.StatusUnauthorized, "invalid request params")
+	if userIP == empty {
+		newErrorResponse(c, http.StatusBadRequest, invalidReq)
 		return
 	}
 
 	newTokenPair, err := h.authService.RefreshTokens(context.Background(), tokenPair, userIP)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "internal error")
-		return
+		if errors.Is(err, auth.ErrInvalidToken) {
+			newErrorResponse(c, http.StatusUnauthorized, unauthorized)
+			return
+		} else if errors.Is(err, auth.ErrTokenDoesNotExists) {
+			newErrorResponse(c, http.StatusUnauthorized, unauthorized)
+			return
+		} else if errors.Is(err, auth.ErrTokenNotIdentical) {
+			newErrorResponse(c, http.StatusUnauthorized, unauthorized)
+			return
+		} else if errors.Is(err, auth.ErrRefreshTokenExpired) {
+			newErrorResponse(c, http.StatusUnauthorized, unauthorized)
+			return
+		} else {
+			newErrorResponse(c, http.StatusInternalServerError, internalError)
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, newTokenPair)

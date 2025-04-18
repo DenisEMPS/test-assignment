@@ -23,7 +23,7 @@ func NewAuth(db *sqlx.DB) *AuthPostgres {
 	return &AuthPostgres{db: db}
 }
 
-func (r *AuthPostgres) SaveRefreshToken(ctx context.Context, tokenDetails *domain.TokenRefreshDetails) error {
+func (r *AuthPostgres) SaveRefreshToken(ctx context.Context, tokenDetails *domain.RefreshTokenDetails) error {
 	const op = "AuthPostgres.SaveRefreshToken"
 
 	query := `
@@ -31,7 +31,7 @@ func (r *AuthPostgres) SaveRefreshToken(ctx context.Context, tokenDetails *domai
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
-	_, err := r.db.ExecContext(ctx, query, tokenDetails.UserID, tokenDetails.AccessUUID, tokenDetails.TokenHash, tokenDetails.UserIP, tokenDetails.ExpiresAt, tokenDetails.CreatedAt)
+	_, err := r.db.ExecContext(ctx, query, tokenDetails.UserID, tokenDetails.AccessUUID, tokenDetails.Hash, tokenDetails.UserIP, tokenDetails.ExpiresAt, tokenDetails.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -42,7 +42,6 @@ func (r *AuthPostgres) SaveRefreshToken(ctx context.Context, tokenDetails *domai
 func (r *AuthPostgres) GetRefreshToken(ctx context.Context, userID uuid.UUID, accessID uuid.UUID) (*domain.TokenRefreshDAO, error) {
 	const op = "AuthPostgres.GetRefreshToken"
 
-	// need check user id?
 	query := `
 		SELECT refresh_hash, expires_at, ip 
 		FROM refresh_sessions
@@ -51,7 +50,7 @@ func (r *AuthPostgres) GetRefreshToken(ctx context.Context, userID uuid.UUID, ac
 
 	var tokenDetails domain.TokenRefreshDAO
 
-	err := r.db.QueryRowContext(ctx, query, userID, accessID).Scan(&tokenDetails.TokenHash, &tokenDetails.ExpiresAt, &tokenDetails.UserIP)
+	err := r.db.QueryRowContext(ctx, query, userID, accessID).Scan(&tokenDetails.Hash, &tokenDetails.ExpiresAt, &tokenDetails.UserIP)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%s: %w", op, ErrTokenDoesNotExists)

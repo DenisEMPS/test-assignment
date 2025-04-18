@@ -12,7 +12,7 @@ type Config struct {
 	Env      string   `yaml:"env" env-default:"local"`
 	Server   Server   `yaml:"server"`
 	Postgres Postgres `yaml:"postgres"`
-	Token    `yaml:"token"`
+	JWT      JWT      `yaml:"token"`
 }
 
 type Server struct {
@@ -28,7 +28,7 @@ type Postgres struct {
 	SSLmode  string `yaml:"sslmode" env-default:"disable"`
 }
 
-type Token struct {
+type JWT struct {
 	AccessTokenTTL  time.Duration `yaml:"access_ttl" env-required:"true"`
 	RefreshTokenTTL time.Duration `yaml:"refresh_ttl" env-required:"true"`
 	Secret          string        `env:"SECRET_KEY"`
