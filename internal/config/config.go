@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"os"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -11,6 +12,7 @@ type Config struct {
 	Env      string   `yaml:"env" env-default:"local"`
 	Server   Server   `yaml:"server"`
 	Postgres Postgres `yaml:"postgres"`
+	Token    `yaml:"token"`
 }
 
 type Server struct {
@@ -24,6 +26,12 @@ type Postgres struct {
 	Port     string `yaml:"port" env-required:"true"`
 	DBname   string `yaml:"dbname" env-required:"true"`
 	SSLmode  string `yaml:"sslmode" env-default:"disable"`
+}
+
+type Token struct {
+	AccessTokenTTL  time.Duration `yaml:"access_ttl" env-required:"true"`
+	RefreshTokenTTL time.Duration `yaml:"refresh_ttl" env-required:"true"`
+	Secret          string        `env:"SECRET_KEY"`
 }
 
 func MustLoad() *Config {

@@ -10,3 +10,7 @@ postgres:
   host: "localhost"
   port: "5436"
   sslmode: "disable"
+
+token:
+  access_ttl: 15m
+  refresh_ttl: 24h

@@ -1,8 +1,13 @@
 package http
 
-import "github.com/gin-gonic/gin"
+import (
+	"log/slog"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Handler struct {
+	log         *slog.Logger
 	authService AuthService
 }
 
@@ -15,7 +20,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	auth := r.Group("/auth")
 	{
-		auth.POST("/sign-in", h.GetTokens)
+		auth.POST("/generate", h.GenerateTokens)
 		auth.POST("/refresh", h.RefreshTokens)
 	}
 

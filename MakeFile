@@ -9,3 +9,6 @@ run:
 postgres_run:
     docker run -d -p 5436:5432 -e POSTGRES_PASSWORD='qwerty' postgres:17
 	// TODO
+
+make_migrations:
+	goose postgres "postgres://user:password@localhost:5432/dbname?sslmode=disable" up

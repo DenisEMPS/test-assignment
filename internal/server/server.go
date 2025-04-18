@@ -14,6 +14,7 @@ func (s *Server) Run(handler http.Handler, port string) error {
 	s.httpServer = &http.Server{
 		Addr:           "127.0.0.1" + ":" + port,
 		MaxHeaderBytes: 1 << 20,
+		Handler:        handler,
 		ReadTimeout:    5 * time.Second,
 		WriteTimeout:   5 * time.Second,
 	}
