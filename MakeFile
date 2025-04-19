@@ -11,4 +11,4 @@ postgres_run:
 	// TODO
 
 make_migrations:
-	goose postgres "postgres://user:password@localhost:5432/dbname?sslmode=disable" up
+	goose -dir migrations/ postgres "postgres://postgres:qwerty@localhost:5436/postgres?sslmode=disable" up

@@ -23,7 +23,7 @@ func NewAuth(db *sqlx.DB) *AuthPostgres {
 	return &AuthPostgres{db: db}
 }
 
-func (r *AuthPostgres) SaveRefreshToken(ctx context.Context, tokenDetails *domain.RefreshTokenDetails) error {
+func (r *AuthPostgres) SaveRefreshTokenRecord(ctx context.Context, tokenDetails *domain.RefreshTokenRecord) error {
 	const op = "AuthPostgres.SaveRefreshToken"
 
 	query := `
@@ -39,7 +39,7 @@ func (r *AuthPostgres) SaveRefreshToken(ctx context.Context, tokenDetails *domai
 	return nil
 }
 
-func (r *AuthPostgres) GetRefreshToken(ctx context.Context, userID uuid.UUID, accessID uuid.UUID) (*domain.TokenRefreshDAO, error) {
+func (r *AuthPostgres) GetRefreshTokenRecord(ctx context.Context, userID uuid.UUID, accessID uuid.UUID) (*domain.TokenRefreshDAO, error) {
 	const op = "AuthPostgres.GetRefreshToken"
 
 	query := `
@@ -61,7 +61,7 @@ func (r *AuthPostgres) GetRefreshToken(ctx context.Context, userID uuid.UUID, ac
 	return &tokenDetails, nil
 }
 
-func (r *AuthPostgres) DeleteRefreshToken(ctx context.Context, userID, accessID uuid.UUID) error {
+func (r *AuthPostgres) DeleteRefreshTokenRecord(ctx context.Context, userID, accessID uuid.UUID) error {
 	const op = "AuthPostgres.DeleteRefreshToken"
 
 	query := `

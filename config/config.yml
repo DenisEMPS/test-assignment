@@ -13,4 +13,5 @@ postgres:
 
 token:
   access_ttl: 15m
-  refresh_ttl: 24h
+  refresh_ttl: 720h
+  secret_key: "asdsadasdsa45435643560354opgflhnfgl;hfgld;"

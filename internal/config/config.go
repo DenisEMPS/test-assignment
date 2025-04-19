@@ -31,27 +31,35 @@ type Postgres struct {
 type JWT struct {
 	AccessTokenTTL  time.Duration `yaml:"access_ttl" env-required:"true"`
 	RefreshTokenTTL time.Duration `yaml:"refresh_ttl" env-required:"true"`
-	Secret          string        `env:"SECRET_KEY"`
+	Secret          string        `yaml:"secret_key" env-required:"true"`
 }
 
 func MustLoad() *Config {
-	var cfgPath string
+	var path string
 
-	flag.StringVar(&cfgPath, "config", "", "path to config file")
+	flag.StringVar(&path, "config", "", "path to config file")
 	flag.Parse()
 
-	if cfgPath == "" {
-		cfgPath = os.Getenv("CONFIG_PATH")
+	if path == "" {
+		path = os.Getenv("CONFIG_PATH")
 	}
 
-	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
+	return MustLoadByPath(path)
+}
+
+func MustLoadByPath(path string) *Config {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
 		panic("config file does not exists")
 	}
 
 	var cfg Config
 
-	if err := cleanenv.ReadConfig(cfgPath, &cfg); err != nil {
+	if err := cleanenv.ReadConfig(path, &cfg); err != nil {
 		panic("failed to read config")
+	}
+
+	if err := cleanenv.ReadEnv(&cfg); err != nil {
+		panic("failed to read env vars")
 	}
 
 	return &cfg

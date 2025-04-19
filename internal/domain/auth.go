@@ -30,7 +30,7 @@ type TokenRefreshDAO struct {
 	ExpiresAt time.Time `db:"expires_at"`
 }
 
-type RefreshTokenDetails struct {
+type RefreshTokenRecord struct {
 	Hash       string
 	UserID     uuid.UUID
 	AccessUUID uuid.UUID

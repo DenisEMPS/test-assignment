@@ -26,9 +26,9 @@ var (
 )
 
 type AuthRepository interface {
-	SaveRefreshToken(ctx context.Context, tokenDetails *domain.RefreshTokenDetails) error
-	GetRefreshToken(ctx context.Context, userID uuid.UUID, accessID uuid.UUID) (*domain.TokenRefreshDAO, error)
-	DeleteRefreshToken(ctx context.Context, userID, accessID uuid.UUID) error
+	SaveRefreshTokenRecord(ctx context.Context, tokenRecord *domain.RefreshTokenRecord) error
+	GetRefreshTokenRecord(ctx context.Context, userID uuid.UUID, accessID uuid.UUID) (*domain.TokenRefreshDAO, error)
+	DeleteRefreshTokenRecord(ctx context.Context, userID, accessID uuid.UUID) error
 }
 
 type Auth struct {
@@ -67,7 +67,7 @@ func (s *Auth) GenerateTokens(ctx context.Context, userID uuid.UUID, userIP stri
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	tokenDetails := &domain.RefreshTokenDetails{
+	tokenRecord := &domain.RefreshTokenRecord{
 		Hash:       refreshHash,
 		UserID:     userID,
 		AccessUUID: accessID,
@@ -76,7 +76,7 @@ func (s *Auth) GenerateTokens(ctx context.Context, userID uuid.UUID, userIP stri
 		ExpiresAt:  time.Now().Add(s.cfg.RefreshTokenTTL),
 	}
 
-	err = s.authRepo.SaveRefreshToken(ctx, tokenDetails)
+	err = s.authRepo.SaveRefreshTokenRecord(ctx, tokenRecord)
 	if err != nil {
 		log.Error("failed to save refresh token in postgres", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -170,7 +170,7 @@ func (s *Auth) RefreshTokens(ctx context.Context, tokenPair *domain.RefreshToken
 
 	log = log.With(slog.Any("user_id", claims.UserID))
 
-	oldRefreshData, err := s.authRepo.GetRefreshToken(ctx, claims.UserID, claims.AccessUUID)
+	refreshTokenRecord, err := s.authRepo.GetRefreshTokenRecord(ctx, claims.UserID, claims.AccessUUID)
 	if err != nil {
 		if errors.Is(err, postgres.ErrTokenDoesNotExists) {
 			log.Warn("token does not exists")
@@ -186,16 +186,16 @@ func (s *Auth) RefreshTokens(ctx context.Context, tokenPair *domain.RefreshToken
 		return nil, fmt.Errorf("%s: failed to decode input refresh token %w", op, err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(oldRefreshData.Hash), currRefreshToken); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(refreshTokenRecord.Hash), currRefreshToken); err != nil {
 		log.Warn("failed to compare refresh tokens", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("%s: %w", op, ErrTokenNotIdentical)
 	}
 
-	if oldRefreshData.ExpiresAt.Before(time.Now()) {
+	if refreshTokenRecord.ExpiresAt.Before(time.Now()) {
 		return nil, fmt.Errorf("%s: %w", op, ErrRefreshTokenExpired)
 	}
 
-	if userIP != oldRefreshData.UserIP {
+	if userIP != refreshTokenRecord.UserIP {
 		fmt.Println("WARNING about logging in from a different IP address")
 	}
 
@@ -212,7 +212,7 @@ func (s *Auth) RefreshTokens(ctx context.Context, tokenPair *domain.RefreshToken
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	newRefreshData := &domain.RefreshTokenDetails{
+	newRefreshRecord := &domain.RefreshTokenRecord{
 		Hash:       refreshHash,
 		UserID:     claims.UserID,
 		AccessUUID: accessID,
@@ -221,13 +221,13 @@ func (s *Auth) RefreshTokens(ctx context.Context, tokenPair *domain.RefreshToken
 		ExpiresAt:  time.Now().Add(s.cfg.RefreshTokenTTL),
 	}
 
-	err = s.authRepo.DeleteRefreshToken(ctx, claims.UserID, claims.AccessUUID)
+	err = s.authRepo.DeleteRefreshTokenRecord(ctx, claims.UserID, claims.AccessUUID)
 	if err != nil {
 		log.Error("failed to delete old refresh token in database", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = s.authRepo.SaveRefreshToken(ctx, newRefreshData)
+	err = s.authRepo.SaveRefreshTokenRecord(ctx, newRefreshRecord)
 	if err != nil {
 		log.Error("failed to save refresh token in database", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("%s: %w", op, err)
