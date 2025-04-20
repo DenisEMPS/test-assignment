@@ -46,7 +46,7 @@ func TestAuthHappyPathAndReuse(t *testing.T) {
 	refresedTokenPair := domain.TokenPairResponse{}
 	userID := uuid.New()
 
-	t.Run("generate tokens", func(t *testing.T) {
+	t.Run("Generate tokens", func(t *testing.T) {
 		req, err := newGenerateTokenHTTPRequest(userID.String())
 		require.NoError(t, err)
 
@@ -59,7 +59,7 @@ func TestAuthHappyPathAndReuse(t *testing.T) {
 		require.NotEmpty(t, validTokenPair.Refresh)
 	})
 
-	t.Run("refresh invalid tokens pair", func(t *testing.T) {
+	t.Run("Refresh invalid tokens pair", func(t *testing.T) {
 		invalidTokenPair.Access = validTokenPair.Access
 		invalidTokenPair.Refresh = base64.URLEncoding.EncodeToString([]byte(uuid.NewString()))
 
@@ -76,7 +76,7 @@ func TestAuthHappyPathAndReuse(t *testing.T) {
 		assert.Equal(t, `{"message":"unauthorized"}`, w.Body.String())
 	})
 
-	t.Run("refresh valid tokens", func(t *testing.T) {
+	t.Run("Refresh valid tokens", func(t *testing.T) {
 		body, err := json.Marshal(validTokenPair)
 		require.NoError(t, err)
 
@@ -94,7 +94,7 @@ func TestAuthHappyPathAndReuse(t *testing.T) {
 		require.NotEqual(t, refresedTokenPair.Refresh, validTokenPair.Refresh)
 	})
 
-	t.Run("refresh tokens reuse", func(t *testing.T) {
+	t.Run("Refresh tokens reuse", func(t *testing.T) {
 		body, err := json.Marshal(validTokenPair)
 		require.NoError(t, err)
 
