@@ -22,7 +22,7 @@ func New(t *testing.T) *Suite {
 		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 	)
 
-	cfg := config.MustLoadByPath("../../config/config.yml")
+	cfg := config.MustLoadByPath("../../tests/suite/config.yml")
 
 	return &Suite{
 		T:   t,

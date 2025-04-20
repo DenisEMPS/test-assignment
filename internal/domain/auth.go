@@ -24,7 +24,7 @@ type RefreshTokensRequest struct {
 	Refresh string `json:"refresh_token"`
 }
 
-type TokenRefreshDAO struct {
+type RefreshTokenRecordDAO struct {
 	Hash      string    `db:"refresh_hash"`
 	UserIP    string    `db:"ip"`
 	ExpiresAt time.Time `db:"expires_at"`

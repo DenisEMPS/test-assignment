@@ -24,7 +24,7 @@ func NewAuth(db *sqlx.DB) *AuthPostgres {
 }
 
 func (r *AuthPostgres) SaveRefreshTokenRecord(ctx context.Context, tokenDetails *domain.RefreshTokenRecord) error {
-	const op = "AuthPostgres.SaveRefreshToken"
+	const op = "AuthPostgres.SaveRefreshTokenRecord"
 
 	query := `
 		INSERT INTO refresh_sessions (user_id, access_uuid, refresh_hash, ip, expires_at, created_at)
@@ -39,8 +39,8 @@ func (r *AuthPostgres) SaveRefreshTokenRecord(ctx context.Context, tokenDetails 
 	return nil
 }
 
-func (r *AuthPostgres) GetRefreshTokenRecord(ctx context.Context, userID uuid.UUID, accessID uuid.UUID) (*domain.TokenRefreshDAO, error) {
-	const op = "AuthPostgres.GetRefreshToken"
+func (r *AuthPostgres) GetRefreshTokenRecord(ctx context.Context, userID uuid.UUID, accessID uuid.UUID) (*domain.RefreshTokenRecordDAO, error) {
+	const op = "AuthPostgres.GetRefreshTokenRecord"
 
 	query := `
 		SELECT refresh_hash, expires_at, ip 
@@ -48,7 +48,7 @@ func (r *AuthPostgres) GetRefreshTokenRecord(ctx context.Context, userID uuid.UU
 		WHERE user_id = $1 AND access_uuid = $2 
 	`
 
-	var tokenDetails domain.TokenRefreshDAO
+	var tokenDetails domain.RefreshTokenRecordDAO
 
 	err := r.db.QueryRowContext(ctx, query, userID, accessID).Scan(&tokenDetails.Hash, &tokenDetails.ExpiresAt, &tokenDetails.UserIP)
 	if err != nil {
@@ -62,7 +62,7 @@ func (r *AuthPostgres) GetRefreshTokenRecord(ctx context.Context, userID uuid.UU
 }
 
 func (r *AuthPostgres) DeleteRefreshTokenRecord(ctx context.Context, userID, accessID uuid.UUID) error {
-	const op = "AuthPostgres.DeleteRefreshToken"
+	const op = "AuthPostgres.DeleteRefreshTokenRecord"
 
 	query := `
 		DELETE FROM refresh_sessions

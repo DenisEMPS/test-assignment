@@ -1,4 +1,4 @@
-FROM golang:1.24.0
+FROM golang:1.24.0 AS builder
 
 WORKDIR /app
 
@@ -8,6 +8,12 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o App cmd/app/main.go
+RUN CGO_ENABLED=0 go build -o main cmd/app/main.go
 
-CMD [ "./App" ]
+FROM alpine:3.20
+
+WORKDIR /app
+
+COPY --from=builder /app/main .
+
+CMD [ "./main" ]

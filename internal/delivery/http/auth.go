@@ -52,6 +52,11 @@ func (h *Handler) RefreshTokens(c *gin.Context) {
 		return
 	}
 
+	if tokenPair.Access == empty || tokenPair.Refresh == empty {
+		newErrorResponse(c, http.StatusBadRequest, invalidReq)
+		return
+	}
+
 	userIP := c.ClientIP()
 	if userIP == empty {
 		newErrorResponse(c, http.StatusBadRequest, invalidReq)
@@ -66,7 +71,7 @@ func (h *Handler) RefreshTokens(c *gin.Context) {
 		} else if errors.Is(err, auth.ErrTokenDoesNotExists) {
 			newErrorResponse(c, http.StatusUnauthorized, unauthorized)
 			return
-		} else if errors.Is(err, auth.ErrTokenNotIdentical) {
+		} else if errors.Is(err, auth.ErrTokensNotIdentical) {
 			newErrorResponse(c, http.StatusUnauthorized, unauthorized)
 			return
 		} else if errors.Is(err, auth.ErrRefreshTokenExpired) {

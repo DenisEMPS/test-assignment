@@ -16,22 +16,22 @@ type Config struct {
 }
 
 type Server struct {
-	Port string `yaml:"port" env-required:"true"`
+	Port string `yaml:"port" env:"PORT" env-required:"true"`
 }
 
 type Postgres struct {
-	Username string `yaml:"username" env-required:"true"`
-	Password string `yaml:"password" env-required:"true"`
-	Host     string `yaml:"host" env-required:"true"`
-	Port     string `yaml:"port" env-required:"true"`
-	DBname   string `yaml:"dbname" env-required:"true"`
+	Username string `yaml:"username" env:"POSTGRES_USER" env-required:"true"`
+	Password string `yaml:"password" env:"POSTGRES_PASSWORD" env-required:"true"`
+	Host     string `yaml:"host" env:"POSTGRES_HOST" env-required:"true"`
+	Port     string `yaml:"port" env:"POSTGRES_PORT" env-required:"true"`
+	DBname   string `yaml:"dbname" env:"POSTGRES_DB" env-required:"true"`
 	SSLmode  string `yaml:"sslmode" env-default:"disable"`
 }
 
 type JWT struct {
-	AccessTokenTTL  time.Duration `yaml:"access_ttl" env-required:"true"`
-	RefreshTokenTTL time.Duration `yaml:"refresh_ttl" env-required:"true"`
-	Secret          string        `yaml:"secret_key" env-required:"true"`
+	AccessTokenTTL  time.Duration `yaml:"access_ttl" env:"ACCESS_TOKEN_TTL" env-required:"true"`
+	RefreshTokenTTL time.Duration `yaml:"refresh_ttl" env:"REFRESH_TOKEN_TTL" env-required:"true"`
+	Secret          string        `yaml:"secret_key" env:"SECRET_KEY" env-required:"true"`
 }
 
 func MustLoad() *Config {
@@ -48,18 +48,22 @@ func MustLoad() *Config {
 }
 
 func MustLoadByPath(path string) *Config {
+	var cfg Config
+
+	if path == "" {
+		if err := cleanenv.ReadEnv(&cfg); err != nil {
+			panic("failed to read env vars" + err.Error())
+		}
+
+		return &cfg
+	}
+
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		panic("config file does not exists")
 	}
 
-	var cfg Config
-
 	if err := cleanenv.ReadConfig(path, &cfg); err != nil {
-		panic("failed to read config")
-	}
-
-	if err := cleanenv.ReadEnv(&cfg); err != nil {
-		panic("failed to read env vars")
+		panic("failed to read config" + err.Error())
 	}
 
 	return &cfg

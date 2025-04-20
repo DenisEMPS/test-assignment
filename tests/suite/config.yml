@@ -1,0 +1,17 @@
+env: "local"
+
+server:
+  port: "8080"
+
+postgres:
+  username: "postgres"
+  password: "qwerty"
+  dbname: "postgres"
+  host: "localhost"
+  port: "5436"
+  sslmode: "disable"
+
+token:
+  access_ttl: 15m
+  refresh_ttl: 720h
+  secret_key: "asdsadasdsa45435643560354opgflhnfgl;hfgld;"

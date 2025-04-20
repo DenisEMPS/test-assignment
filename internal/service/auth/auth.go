@@ -20,14 +20,15 @@ import (
 var (
 	ErrTokenExpired        = errors.New("token is expired")
 	ErrTokenDoesNotExists  = errors.New("token does not exists")
-	ErrTokenNotIdentical   = errors.New("tokens are not identical")
+	ErrTokensNotIdentical  = errors.New("tokens are not identical")
 	ErrInvalidToken        = errors.New("invalid token")
 	ErrRefreshTokenExpired = errors.New("refresh token expired")
 )
 
+//go:generate mockgen -source=auth.go -destination=mocks/mock.go
 type AuthRepository interface {
 	SaveRefreshTokenRecord(ctx context.Context, tokenRecord *domain.RefreshTokenRecord) error
-	GetRefreshTokenRecord(ctx context.Context, userID uuid.UUID, accessID uuid.UUID) (*domain.TokenRefreshDAO, error)
+	GetRefreshTokenRecord(ctx context.Context, userID uuid.UUID, accessID uuid.UUID) (*domain.RefreshTokenRecordDAO, error)
 	DeleteRefreshTokenRecord(ctx context.Context, userID, accessID uuid.UUID) error
 }
 
@@ -50,7 +51,7 @@ func (s *Auth) GenerateTokens(ctx context.Context, userID uuid.UUID, userIP stri
 
 	log := s.log.With(
 		slog.String("op", op),
-		slog.Any("user_id", userID),
+		slog.String("user_id", userID.String()[:15]),
 	)
 
 	accessID := uuid.New()
@@ -122,7 +123,7 @@ func (s *Auth) GenerateRefreshToken() (string, string, error) {
 		return "", "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	return base64.StdEncoding.EncodeToString([]byte(bts)), string(hash), nil
+	return base64.StdEncoding.EncodeToString(bts), string(hash), nil
 }
 
 func (s *Auth) ParseAccessToken(token string) (*domain.UserClaims, error) {
@@ -141,13 +142,13 @@ func (s *Auth) ParseAccessToken(token string) (*domain.UserClaims, error) {
 		if ve, ok := err.(*jwt.ValidationError); ok && ve.Errors&jwt.ValidationErrorExpired != 0 {
 			errType = ErrTokenExpired
 		} else {
-			return nil, fmt.Errorf("%s invalid token: %w", op, err)
+			return nil, fmt.Errorf("%s invalid token: %s %w", op, err, ErrInvalidToken)
 		}
 	}
 
 	claims, ok := tokenParsed.Claims.(*domain.UserClaims)
 	if !ok {
-		return nil, fmt.Errorf("%s: claims not in type", op)
+		return nil, fmt.Errorf("%s: %w claims not in required type", op, ErrInvalidToken)
 	}
 
 	return claims, errType
@@ -168,7 +169,15 @@ func (s *Auth) RefreshTokens(ctx context.Context, tokenPair *domain.RefreshToken
 		}
 	}
 
-	log = log.With(slog.Any("user_id", claims.UserID))
+	currRefreshToken, err := base64.StdEncoding.DecodeString(tokenPair.Refresh)
+	if err != nil {
+		log.Warn("failed to decode input refresh token", slog.String("error", err.Error()))
+		return nil, fmt.Errorf("%s: failed to decode input refresh token %w", op, err)
+	}
+
+	log = log.With(
+		slog.String("user_id", claims.UserID.String()[:15]),
+	)
 
 	refreshTokenRecord, err := s.authRepo.GetRefreshTokenRecord(ctx, claims.UserID, claims.AccessUUID)
 	if err != nil {
@@ -176,22 +185,22 @@ func (s *Auth) RefreshTokens(ctx context.Context, tokenPair *domain.RefreshToken
 			log.Warn("token does not exists")
 			return nil, fmt.Errorf("%s: %w", op, ErrTokenDoesNotExists)
 		}
-		log.Error("failed to get refresh token", slog.String("error", err.Error()))
+		log.Error("failed to get refresh token record from postgres", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	currRefreshToken, err := base64.StdEncoding.DecodeString(tokenPair.Refresh)
-	if err != nil {
-		log.Warn("failed to decode input refresh token", slog.String("error", err.Error()))
-		return nil, fmt.Errorf("%s: failed to decode input refresh token %w", op, err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(refreshTokenRecord.Hash), currRefreshToken); err != nil {
 		log.Warn("failed to compare refresh tokens", slog.String("error", err.Error()))
-		return nil, fmt.Errorf("%s: %w", op, ErrTokenNotIdentical)
+		return nil, fmt.Errorf("%s: %w", op, ErrTokensNotIdentical)
 	}
 
 	if refreshTokenRecord.ExpiresAt.Before(time.Now()) {
+		err = s.authRepo.DeleteRefreshTokenRecord(ctx, claims.UserID, claims.AccessUUID)
+		if err != nil {
+			log.Error("failed to delete expired refresh token record in postgres", slog.String("error", err.Error()))
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		log.Info("token is expired and was successfuly deleted")
 		return nil, fmt.Errorf("%s: %w", op, ErrRefreshTokenExpired)
 	}
 
@@ -223,13 +232,13 @@ func (s *Auth) RefreshTokens(ctx context.Context, tokenPair *domain.RefreshToken
 
 	err = s.authRepo.DeleteRefreshTokenRecord(ctx, claims.UserID, claims.AccessUUID)
 	if err != nil {
-		log.Error("failed to delete old refresh token in database", slog.String("error", err.Error()))
+		log.Error("failed to delete old refresh token record in postgres", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	err = s.authRepo.SaveRefreshTokenRecord(ctx, newRefreshRecord)
 	if err != nil {
-		log.Error("failed to save refresh token in database", slog.String("error", err.Error()))
+		log.Error("failed to save new refresh token record in postgres", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
