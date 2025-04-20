@@ -23,6 +23,7 @@ var (
 	ErrTokensNotIdentical  = errors.New("tokens are not identical")
 	ErrInvalidToken        = errors.New("invalid token")
 	ErrRefreshTokenExpired = errors.New("refresh token expired")
+	ErrInvalidRefreshToken = errors.New("invalid refresh token")
 )
 
 //go:generate mockgen -source=auth.go -destination=mocks/mock.go
@@ -172,7 +173,7 @@ func (s *Auth) RefreshTokens(ctx context.Context, tokenPair *domain.RefreshToken
 	currRefreshToken, err := base64.StdEncoding.DecodeString(tokenPair.Refresh)
 	if err != nil {
 		log.Warn("failed to decode input refresh token", slog.String("error", err.Error()))
-		return nil, fmt.Errorf("%s: failed to decode input refresh token %w", op, err)
+		return nil, fmt.Errorf("%s: %s failed to decode input refresh token %w", op, err.Error(), ErrInvalidRefreshToken)
 	}
 
 	log = log.With(

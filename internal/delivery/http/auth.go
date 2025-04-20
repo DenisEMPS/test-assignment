@@ -77,6 +77,9 @@ func (h *Handler) RefreshTokens(c *gin.Context) {
 		} else if errors.Is(err, auth.ErrRefreshTokenExpired) {
 			newErrorResponse(c, http.StatusUnauthorized, unauthorized)
 			return
+		} else if errors.Is(err, auth.ErrInvalidRefreshToken) {
+			newErrorResponse(c, http.StatusUnauthorized, unauthorized)
+			return
 		} else {
 			newErrorResponse(c, http.StatusInternalServerError, internalError)
 			return
